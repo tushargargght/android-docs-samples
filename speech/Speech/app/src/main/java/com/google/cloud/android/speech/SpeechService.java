@@ -36,6 +36,7 @@ import com.google.cloud.speech.v1.RecognitionAudio;
 import com.google.cloud.speech.v1.RecognitionConfig;
 import com.google.cloud.speech.v1.RecognizeRequest;
 import com.google.cloud.speech.v1.RecognizeResponse;
+import com.google.cloud.speech.v1.SpeechContext;
 import com.google.cloud.speech.v1.SpeechGrpc;
 import com.google.cloud.speech.v1.SpeechRecognitionAlternative;
 import com.google.cloud.speech.v1.SpeechRecognitionResult;
@@ -50,6 +51,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -92,9 +94,13 @@ public class SpeechService extends Service {
     private static final String PREF_ACCESS_TOKEN_VALUE = "access_token_value";
     private static final String PREF_ACCESS_TOKEN_EXPIRATION_TIME = "access_token_expiration_time";
 
-    /** We reuse an access token if its expiration time is longer than this. */
+    /**
+     * We reuse an access token if its expiration time is longer than this.
+     */
     private static final int ACCESS_TOKEN_EXPIRATION_TOLERANCE = 30 * 60 * 1000; // thirty minutes
-    /** We refresh the current access token before it expires. */
+    /**
+     * We refresh the current access token before it expires.
+     */
     private static final int ACCESS_TOKEN_FETCH_MARGIN = 60 * 1000; // one minute
 
     public static final List<String> SCOPE =
@@ -107,6 +113,8 @@ public class SpeechService extends Service {
     private volatile AccessTokenTask mAccessTokenTask;
     private SpeechGrpc.SpeechStub mApi;
     private static Handler mHandler;
+
+    private static List<String> phrases = new ArrayList<>(Arrays.asList("Aglaonema", "Alocasia", "Asokodium", "Bulb", "Carbona", "Chamaedorea Palm", "Chamaedorea Palm", "Cocopeat", "Diffenbachia", "Dracaena", "Fern", "Ficus Panda", "Ficus Tanglar", "Golden Fern", "Ixora", "Kajrina", "Kajrina", "Katechu", "Lyrata", "Monestra", "Muranta", "Pachira", "Palm", "Palm", "Pendanas", "Philodendron", "Phyllanthus", "Raphis Palm", "Safari Ficus", "Schefflera", "Seelam", "Tikoma", "Tramelia Metallica", "Vernisht Fern", "Xanadu", "Z Plant", "Zamia", "Zarvera"));
 
     private final StreamObserver<StreamingRecognizeResponse> mResponseObserver
             = new StreamObserver<StreamingRecognizeResponse>() {
@@ -220,7 +228,7 @@ public class SpeechService extends Service {
             language.append("-");
             language.append(country);
         }
-        return language.toString();
+        return "en-IN";
     }
 
     @Nullable
@@ -247,6 +255,8 @@ public class SpeechService extends Service {
             Log.w(TAG, "API not ready. Ignoring the request.");
             return;
         }
+
+
         // Configure the API
         mRequestObserver = mApi.streamingRecognize(mResponseObserver);
         mRequestObserver.onNext(StreamingRecognizeRequest.newBuilder()
@@ -254,7 +264,7 @@ public class SpeechService extends Service {
                         .setConfig(RecognitionConfig.newBuilder()
                                 .setLanguageCode(getDefaultLanguageCode())
                                 .setEncoding(RecognitionConfig.AudioEncoding.LINEAR16)
-                                .setSampleRateHertz(sampleRate)
+                                .setSampleRateHertz(sampleRate).addSpeechContexts(SpeechContext.newBuilder().addAllPhrases(phrases))
                                 .build())
                         .setInterimResults(true)
                         .setSingleUtterance(true)
